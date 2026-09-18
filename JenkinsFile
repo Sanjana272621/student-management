@@ -1,0 +1,45 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Maven Build & Test') {
+            steps {
+                bat 'mvn clean package'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                bat 'docker build -t student-management:latest .'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                bat '''
+                docker stop student-management-container || exit 0
+                docker rm student-management-container || exit 0
+                docker run -d --name student-management-container -p 8081:8080 student-management:latest
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'CI/CD pipeline completed successfully.'
+        }
+
+        failure {
+            echo 'CI/CD pipeline failed.'
+        }
+    }
+}
